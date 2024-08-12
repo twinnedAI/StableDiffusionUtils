@@ -12,20 +12,30 @@ parser.add_argument('-copy', action='store_true', help="Set this flag to copy cl
 parser.add_argument('-onlyCopy', action='store_true', help="Set this flag to only copy cloud data to an existing instance")
 args = parser.parse_args()
 
-CIVIT_AI_TOKEN=parser.civit_token
-HF_TOKEN=parser.hf_token
+CIVIT_AI_TOKEN=args.civit_token
+HF_TOKEN=args.hf_token
 
 # some search params
-dph = 0.38
-gpu_ram = 24
-gpu_names= "[\"RTX_4090\"]"
+min_dph = 0.38
+max_dph = 0.6
+gpu_ram = 48
+cpu_ram = 64
+#gpu_names= "[\"RTX_4090\"]"
 disk_space=100
 
 # connections
 cloud_data_connection_id="13808"
-provisioning_script="https://gist.github.com/twinnedAI/0e0cb62e50a19b467ad7df6e41dd14ca/raw"
-#provisioning_script="https://gist.github.com/twinnedAI/5f3db778097c3f622aa392e891bbf695/raw"
-#"https://gist.github.com/twinnedAI/98a1acfe548c649a643def2317ac7e05/raw"
+
+# Flux fp16
+provisioning_script="https://gist.github.com/twinnedAI/d2f54ee57bcd98e0091a77e881cb8859/raw"
+
+# Flux fp8
+# provisioning_script="https://gist.github.com/twinnedAI/0e0cb62e50a19b467ad7df6e41dd14ca/raw"
+
+# SDXL
+# provisioning_script="https://gist.github.com/twinnedAI/5f3db778097c3f622aa392e891bbf695/raw"
+# provisioning_script="https://gist.github.com/twinnedAI/98a1acfe548c649a643def2317ac7e05/raw"
+
 client = VastAI(api_key='b921f4caa3e3eb8fbadf23056b03a95a751e4ad8bda2ff7ac6a0c8fc062775bf', raw=True)
 
 def loadInstances():
@@ -56,7 +66,7 @@ def copyCloudData(instance):
     client.cloud_copy(src='/workspace/ComfyUI/models/loras', dst='/opt/ComfyUI/models/loras',instance=instance.get('id'), connection=cloud_data_connection_id, transfer="Cloud To Instance")
 
 def create_contract():
-    query = F'dph>={dph} reliability>0.95 num_gpus=1 verified=true gpu_ram>={gpu_ram} disk_space>={disk_space} gpu_name in {gpu_names} geolocation in [DE, FR, PL, SE, ES, PT, CH, NO, LU, CZ, US]'
+    query = F'dph>={min_dph} dph<={max_dph} reliability>0.95 num_gpus=1 verified=true gpu_ram>={gpu_ram} cpu_ram>={cpu_ram} disk_space>={disk_space} geolocation in [DE, FR, PL, SE, ES, PT, CH, NO, LU, CZ, US]'
     #print(query)
     offers_raw = client.search_offers(query=query,order='dph+', limit=8)
     offers = json.loads(offers_raw)
